@@ -31,9 +31,19 @@ matrix=[[2,2,2,1,2,2,2,1,1,2],
         [2,2,2,2,2,2,2,2,2,2]]
 
 def do_move(move,matrix): # mananca bomboana de pe move
-    #move e de forma (i,j)
-    return True 
+    if move[0] < 0 or move[0] >= N or move[1] < 0 or move[1] >= N:
+        return False
+ 
+    if matrix[move[0]][move[1]] == BOMBOANA:
+        matrix[move[0]][move[1]] = GOL
+        return True
+    
+    return False
 def undo_move(CH,move,matrix): #dam undo la mutare. punem pe move CH( bomboana sau gol)
+    if move[0] < 0 or move[0] >= N or move[1] < 0 or move[1] >= N:
+        return False
+ 
+    board[move[0]][move[1]] = CH
     return True
 def print_Matrix(matrix): #afisam matricea in interfata sau normal
     return True

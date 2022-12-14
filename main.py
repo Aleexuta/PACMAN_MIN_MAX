@@ -19,16 +19,16 @@ PACMAN=4
 #fantomele o sa se miste random
 #pacmanul isi va alege pozitia dupa algoritmul min-max alpha beta pruning
 
-matrix=[[],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        []]
+matrix=[[2,2,2,1,2,2,2,1,1,2],
+        [2,1,2,2,2,1,2,2,1,2],
+        [2,1,1,1,1,1,1,2,1,2],
+        [2,1,2,2,2,1,2,2,2,2],
+        [2,2,2,1,1,1,2,1,2,1],
+        [2,1,2,2,1,2,2,1,2,2],
+        [2,1,1,2,1,2,1,1,1,2],
+        [2,2,2,2,2,2,2,1,2,2],
+        [1,1,1,1,1,2,1,1,2,1],
+        [2,2,2,2,2,2,2,2,2,2]]
 
 def do_move(move,matrix): # mananca bomboana de pe move
     #move e de forma (i,j)
@@ -91,7 +91,10 @@ def move_pacman(matrix,pacmanPosition, ghostPositions):
 
 
 game_over=False
+pacman_pos=(0,0)
+ghost_pos=[(0,10),(10,0)]
 
+matrix[pacman_pos[0]][pacman_pos[1]]=0
 
 while not game_over:
     #o sa dam impresia ca pacman si fantoma se misca in acelasi timp pt ca le mutam pe ambele in aceasi iteratie

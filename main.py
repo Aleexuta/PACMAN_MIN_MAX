@@ -98,6 +98,65 @@ def check_win(matrix,ghostPositions, pacmanPosition): # verificam daca s-a termi
 
 
 def possible_moves(CH,matrix): # ia toate posibilele mutari ale lui pacman(4) sau ale fantomelor(toate)
+    
+    return False
+
+def all_ghost_moves():
+    #moves=[]
+
+    #posible_moves()
+    return True
+
+def possible_moves(CH,matrix,ghost_pos,pacman_pos): # ia toate posibilele mutari ale lui pacman(4) sau ale fantomelor(toate)
+    moves=[]
+
+
+
+    moves_finalGh=[]
+    x=pacman_pos.x
+    y=pacman_pos.y
+    
+            
+    if CH==PACMAN :
+        if matrix[x+1][y]!=1 :                       #dreapta
+            moves.append({'x':x+1,'y':y})
+        if matrix[x-1][y]!=1 :                      #stanga
+           moves.append({'x':x-1,'y':y})
+        if matrix[x][y-1]!=1 :                      #jos
+            moves.append({'x':x,'y':y-1})
+        if matrix[x][y+1]!=1 :                      #sus
+            moves.append({'x':x,'y':y+1})
+        return moves
+
+    
+
+
+
+    if CH==FANTOMA :
+        for i in ghost_number:
+            moves_ghost=[{}]
+            x_ghs=ghost_pos[i].x
+            y_ghs=ghost_pos[i].y
+            moves=[]
+
+        # facem combiari 4 cate nr de fantome 
+
+            if matrix[x_ghs+1][y_ghs]!=1 :                       #dreapta
+               moves.append({'x':x_ghs+1,'y':y_ghs})
+            if matrix[x_ghs-1][y_ghs]!=1 :                      #stanga
+               moves.append({'x':x_ghs-1,'y':y_ghs})
+            if matrix[x_ghs][y_ghs-1]!=1 :                      #jos
+               moves.append({'x':x_ghs,'y':y_ghs-1})
+            if matrix[x_ghs][y_ghs+1]!=1 :                      #sus
+               moves.append({'x':x_ghs,'y':y_ghs+1})
+            moves_ghost.append(moves)        
+    
+
+
+    return moves_ghost
+
+
+
     #posibile adica sa nu aiba ziduri si chestii
     #pacman sa nu intre in fantoma
     #returnam o lista cu elem de forma (i,j) de la personajul resp
@@ -145,9 +204,13 @@ def move_pacman(matrix,pacmanPosition, ghostPositions):
 
 
 game_over=False
-pacman_pos=(0,0)
-ghost_pos=[(0,10),(10,0)]
 
+pacman_pos={'x':1,'y':1}
+ghost_pos=[{'x':1,'y':11},{'x':11,'y':1}]
+#ghost_pos[1].x
+
+N=10
+ghost_number=2
 matrix[pacman_pos[0]][pacman_pos[1]]=0
 
 while not game_over:

@@ -1,6 +1,10 @@
 from enum import Enum#test
 import random
 import numpy as np
+from itertools import combinations_with_replacement
+import sys
+import copy
+sys.setrecursionlimit(10000) 
 #0-gol
 #1-perete
 #2-bomboana
@@ -18,65 +22,109 @@ FANTOMA=3
 PACMAN=4
 
 
+stateSteps=[]
 #fantomele o sa se miste random
 #pacmanul isi va alege pozitia dupa algoritmul min-max alpha beta pruning
 
-matrix=[[1,1,1,1,1,1,1,1,1,1,1,1]
+matrix=[[1,1,1,1,1,1,1,1,1,1,1,1],
         [1,2,2,2,1,2,2,2,1,1,2,1],
-        [1,2,1,2,2,2,1,2,2,1,2,1],
+        [1,2,1,2,2,2,1,2,2,2,2,1],
         [1,2,1,1,1,1,1,1,2,1,2,1],
         [1,2,1,2,2,2,1,2,2,2,2,1],
         [1,2,2,2,1,1,1,2,1,2,1,1],
         [1,2,1,2,2,1,2,2,1,2,2,1],
         [1,2,1,1,2,1,2,1,1,1,2,1],
         [1,2,2,2,2,2,2,2,1,2,2,1],
-        [1,1,1,1,1,1,2,1,1,2,1,1],
+        [1,2,1,1,1,1,2,1,1,2,1,1],
         [1,2,2,2,2,2,2,2,2,2,2,1],
         [1,1,1,1,1,1,1,1,1,1,1,1]]
-
+minMatrix=[[1,1,1,1,1],
+            [1,2,2,2,1],
+            [1,2,2,2,1],
+            [1,2,2,2,1],
+            [1,1,1,1,1]]
 def do_move(move,matrix): # mananca bomboana de pe move
-    if move[0] < 0 or move[0] >= N or move[1] < 0 or move[1] >= N:
+    if move['x'] < 0 or move['x'] >= N or move['y'] < 0 or move['y'] >= N:
         return False
  
-    if matrix[move[0]][move[1]] == BOMBOANA:
-        matrix[move[0]][move[1]] = GOL
+    if matrix[move['x']][move['y']] == BOMBOANA:
+        matrix[move['x']][move['y']] = GOL
         return True
     
     return False
 def undo_move(CH,move,matrix): #dam undo la mutare. punem pe move CH( bomboana sau gol)
-    if move[0] < 0 or move[0] >= N or move[1] < 0 or move[1] >= N:
+    if move['x'] < 0 or move['x'] >= N or move['y'] < 0 or move['y'] >= N:
         return False
  
-    matrix[move[0]][move[1]] = CH
+    matrix[move['x']][move['y']] = CH
+    return True
+#TODO
+def printGraphic(matrix):
     return True
 def print_Matrix(matrix): #afisam matricea in interfata sau normal
+    newMatrix=copy.deepcopy(matrix)
+    newMatrix[pacman_pos['x']][pacman_pos['y']]=PACMAN
+    for i in range(ghost_number):
+         newMatrix[ghost_pos[i]['x']][ghost_pos[i]['y']]=FANTOMA
+    for i in range(N):
+        print(newMatrix[i])
+    print(pacman_pos)
+    print(ghost_pos)
+    print("\n\n")
+def is_ghost_move_valid(ghostPosition,actualGhost,newMove):
+    for i in range(ghost_number):
+        if(i!=actualGhost):
+            if(newMove['x']==ghostPosition[i]['x'] and newMove['y']==ghostPosition[i]['y']):
+                return False
     return True
-
 def move_ghost(matrix,ghostPositions): #mutam random fantomele
     # facem random pe pozitii. 0 pt sus, 1 pt dreapta, 2 pt jos, 3 pt stanga
-    moved = False
-    i=ghostPositions[nr_gh].x
-    j=ghostPositions[nr_gh].y
-    while not moved:
-        pozitie_random = random.randint(0, 3)
-        if pozitie_random == 0:
-            if (i-1)>=0 and matrix[i-1][j] != PERETE:
-                ghostPositions[nr_gh]={'x':i-1,'y':j}
+    for nr_gh in range(ghost_number):
+        moved = False
+        i=ghostPositions[nr_gh]['x']
+        j=ghostPositions[nr_gh]['y']
+        invalid_pos=0
+        while not moved:
+            pozitie_random = random.randint(0, 3)
+            if pozitie_random == 0:
+                if (i-1)>=0 and matrix[i-1][j] != PERETE:
+                    if(is_ghost_move_valid(ghostPositions,nr_gh,{'x':i-1,'y':j})):
+                        ghostPositions[nr_gh]={'x':i-1,'y':j}
+                        moved=True
+                    else: invalid_pos+=1
+            if pozitie_random == 1:
+                if (j+1)<=N and matrix[i][j+1] != PERETE:
+                    if(is_ghost_move_valid(ghostPositions,nr_gh,{'x':i,'y':j+1})):
+                        ghostPositions[nr_gh]={'x':i,'y':j+1}
+                        moved = True
+                    else: invalid_pos+=1
+            if pozitie_random == 0:
+                if (i+1)<=N and matrix[i+1][j] != PERETE:
+                    if(is_ghost_move_valid(ghostPositions,nr_gh,{'x':i+1,'y':j})):
+                        ghostPositions[nr_gh]={'x':i+1,'y':j}
+                        moved=True
+                    else: invalid_pos+=1
+            if pozitie_random == 0:
+                if (j-1)>=0 and matrix[i][j-1] != PERETE:
+                    if(is_ghost_move_valid(ghostPositions,nr_gh,{'x':i,'y':j-1})):
+                        ghostPositions[nr_gh]={'x':i,'y':j-1}
+                        moved = True
+                    else: invalid_pos+=1
+            if( invalid_pos==4):
                 moved=True
-        if pozitie_random == 1:
-            if (j+1)<=N and matrix[i][j+1] != PERETE:
-                ghostPositions[nr_gh]={'x':i,'y':j+1}
-                moved = True
-        if pozitie_random == 0:
-            if (i+1)<=N and matrix[i+1][j] != PERETE:
-                ghostPositions[nr_gh]={'x':i+1,'y':j}
-                moved=True
-        if pozitie_random == 0:
-            if (j-1)>=0 and matrix[i][j-1] != PERETE:
-                ghostPositions[nr_gh]={'x':i,'y':j-1}
-                moved = True
+    return ghostPositions
+def check_win(matrix,ghostPositions, pacmanPosition,inEvaluate=True): # verificam daca s-a terminat jocul, nr de bomboane==0, sau pacman este mancat 
 
-def check_win(matrix,ghostPositions, pacmanPosition): # verificam daca s-a terminat jocul, nr de bomboane==0, sau pacman este mancat 
+   
+    
+    k=pacmanPosition['x']
+    l=pacmanPosition['y']
+    for nr_gh in range(ghost_number):
+        i=ghostPositions[nr_gh]['x']
+        j=ghostPositions[nr_gh]['y']
+
+        if(j==l and i==k):
+            return (True,FANTOMA)
     nr_bomboane=0
     for i in range(N):
         for j in range(N):
@@ -85,64 +133,45 @@ def check_win(matrix,ghostPositions, pacmanPosition): # verificam daca s-a termi
     
     if nr_bomboane==0:
         return (True,PACMAN)
-    
-    k=pacmanPosition.x
-    l=pacmanPosition.y
-    for nr_gh in range(ghost_number):
-        i=ghostPositions[nr_gh].x
-        j=ghostPositions[nr_gh].y
-
-        if(i==l and j==k):
-            return (True,FANTOMA)
-
     return (False,-1)
     
     
 
-
-def possible_moves(CH,matrix): # ia toate posibilele mutari ale lui pacman(4) sau ale fantomelor(toate)
-    
-    return False
-
 def all_ghost_moves():
-    #moves=[]
+
+    moves=combinations_with_replacement([0,1,2,3],ghost_number)
 
     #posible_moves()
-    return True
-
+    return moves
+def isInList(move):
+    for mv in stateSteps:
+        if mv['x']==move['x'] and mv['y']==move['y']:
+            return True
+    return False
 def possible_moves(CH,matrix,ghost_pos,pacman_pos): # ia toate posibilele mutari ale lui pacman(4) sau ale fantomelor(toate)
     moves=[]
 
-
-
-    moves_finalGh=[]
-    x=pacman_pos.x
-    y=pacman_pos.y
-    
+    x=pacman_pos['x']
+    y=pacman_pos['y']
             
     if CH==PACMAN :
-        if matrix[x+1][y]!=1 :                       #dreapta
+        if matrix[x+1][y]!=PERETE :                       #jos
             moves.append({'x':x+1,'y':y})
-        if matrix[x-1][y]!=1 :                      #stanga
+        if matrix[x-1][y]!=PERETE :                      #sus
            moves.append({'x':x-1,'y':y})
-        if matrix[x][y-1]!=1 :                      #jos
+        if matrix[x][y-1]!=PERETE :                      #stanga
             moves.append({'x':x,'y':y-1})
-        if matrix[x][y+1]!=1 :                      #sus
+        if matrix[x][y+1]!=PERETE :                      #dreapta
             moves.append({'x':x,'y':y+1})
         return moves
-
-    
-
-
-
     if CH==FANTOMA :
-        for i in ghost_number:
-            moves_ghost=[{}]
-            x_ghs=ghost_pos[i].x
-            y_ghs=ghost_pos[i].y
+        combinations=all_ghost_moves()
+        moves_ghost_position=[]
+        for i in range(ghost_number):
+           
+            x_ghs=ghost_pos[i]['x']
+            y_ghs=ghost_pos[i]['y']
             moves=[]
-
-        # facem combiari 4 cate nr de fantome 
 
             if matrix[x_ghs+1][y_ghs]!=1 :                       #dreapta
                moves.append({'x':x_ghs+1,'y':y_ghs})
@@ -152,29 +181,34 @@ def possible_moves(CH,matrix,ghost_pos,pacman_pos): # ia toate posibilele mutari
                moves.append({'x':x_ghs,'y':y_ghs-1})
             if matrix[x_ghs][y_ghs+1]!=1 :                      #sus
                moves.append({'x':x_ghs,'y':y_ghs+1})
-            moves_ghost.append(moves)        
-    
-
-
-    return moves_ghost
-
-
-
-    #posibile adica sa nu aiba ziduri si chestii
-    #pacman sa nu intre in fantoma
-    #returnam o lista cu elem de forma (i,j) de la personajul resp
-    return True
+            moves_ghost_position.append(moves)        
+        all_moves=[]
+        for comb in list(combinations):
+            state=[]
+            isok=True
+            for gh in range(ghost_number):
+                if(comb[gh]>=len(moves_ghost_position[gh])):
+                    isok=False
+            if(isok):
+                for gh in range(ghost_number):
+                    state.append(moves_ghost_position[gh][comb[gh]])
+                all_moves.append(state)
+        return all_moves
 
 #este recursiva, face overthinking
-def evaluate_move(matrix,pacmacPosition, ghostPositions, candyConsumed=0,depth=0,isMaximizingPlayer=True): #calculeaza costul mutarii ( arborele) si returneaza cea mai buna alegere 
+def evaluate_move(matrix, pacmacPosition, ghostPositions, alpha, beta,candyConsumed=0,depth=0,isMaximizingPlayer=True): #calculeaza costul mutarii ( arborele) si returneaza cea mai buna alegere 
     #functia de min/max
     #verificam sa nu fie la final ( game over /castig )
     final,player=check_win(matrix,ghostPositions=ghostPositions,pacmanPosition=pacmacPosition)
     if final==1:
         if player==FANTOMA:
-            return 1000-depth
+            return -100+depth
         elif player==PACMAN:
-            return depth-1000
+            return -depth+100+2*candyConsumed
+        else:
+            return -depth+2*candyConsumed
+    if depth >10:
+        return depth+2*candyConsumed
     #aici, la frunze e cel mai ciudatel
         # -1000 + depth pierde pacman
         # 1000 - depth + candyConsumed pana aici
@@ -182,13 +216,14 @@ def evaluate_move(matrix,pacmacPosition, ghostPositions, candyConsumed=0,depth=0
     evals=[]
     #if daca e isMax=True   ->pacman
     if isMaximizingPlayer==True:
+        maxEval=-10000
         #reapelam functia cu isMax=false
         #merge pe acelasi principiu ca la move.
         #luam toate posibilele mutari pacman ( lista cu pozitile de la pacman )
-        moves=possible_moves(PACMAN,matrix,ghost_pos,pacmacPosition)
+        moves=possible_moves(PACMAN,matrix,ghostPositions,pacmacPosition)
         for move in moves:
         #salvam ce se afla pe viitoarea pozitie
-            old_ch=matrix[move.x][move.y]
+            old_ch=matrix[move['x']][move['y']]
         #facem mutare, punem pe noua pozitia a pacmanului, ca e GOL
             do_move(move,matrix)
         #evaluam noua posibila mutare, adaugam +1 la candyConsumed daca pe viitoarea este bomboana
@@ -196,25 +231,34 @@ def evaluate_move(matrix,pacmacPosition, ghostPositions, candyConsumed=0,depth=0
                  candy=candyConsumed+1
             else:
                  candy=candyConsumed
-            evals.append(evaluate_move(matrix,move,ghostPositions,candy,depth+1,False))
+            eval=evaluate_move(matrix,move,ghostPositions,alpha,beta,candy,depth+1,False)
         #undo la mutare ( adaugam in matrice daca era bomboana sau nu)
-            undo_move(old_ch)
-        bestMove=max(evals)
+            undo_move(old_ch,move,matrix)
+            maxEval=max(maxEval,eval)
+            alpha=max(alpha,eval)
+            if(beta <= alpha):
+                break
+        bestMove= maxEval
         #calculam max din valorile
     #else    ->fantoma
     else:
-
+        minEval=10000
         #reapelam functia cu isMax=True
         #merge pe acelasi principiu ca la move.
         #luam toate posibilele mutari fantomelor
-        moves=possible_moves(FANTOMA,matrix,ghost_pos,pacmacPosition)
+        moves=possible_moves(FANTOMA,matrix,ghostPositions,pacmacPosition)
+        for move in moves:
         #evaluam noua posibila mutare, matricea nu se schimba 
-        evals.append(evaluate_move(matrix,pacmacPosition,ghostPositions,candyConsumed,depth+1,True))
+            eval=evaluate_move(matrix, pacmacPosition, move, alpha, beta, candyConsumed, depth+1, True)
         #calculam min din valori
-        bestMove=min(evals)
+            minEval=min(minEval,eval)
+            beta=min(beta,eval)
+            if(beta<=alpha):
+                break
+        bestMove=minEval
     #returnam valoarea cea mai buna
     return bestMove
-def move_pacman(matrix,pacmanPosition, ghostPositions):
+def move_pacman(matrix,pacmanPosition, ghostPositions,alpha,beta):
     
     #luam toate posibilele mutari pacman ( lista cu pozitile de la pacman )
     #salvam ce se afla pe viitoarea pozitie
@@ -222,11 +266,16 @@ def move_pacman(matrix,pacmanPosition, ghostPositions):
     #evaluam noua posibila mutare
     #candy consumed va fi 0  de la pozitia asta
     #undo la mutare ( adaugam in matrice daca era bomboana sau nu)
+    
+    maxEval=-10000
     evals=[]
+    #reapelam functia cu isMax=false
+    #merge pe acelasi principiu ca la move.
+    #luam toate posibilele mutari pacman ( lista cu pozitile de la pacman )
     moves=possible_moves(PACMAN,matrix,ghost_pos,pacmanPosition)
     for move in moves:
     #salvam ce se afla pe viitoarea pozitie
-        old_ch=matrix[move.x][move.y]
+        old_ch=matrix[move['x']][move['y']]
     #facem mutare, punem pe noua pozitia a pacmanului, ca e GOL
         do_move(move,matrix)
     #evaluam noua posibila mutare, adaugam +1 la candyConsumed daca pe viitoarea este bomboana
@@ -234,33 +283,65 @@ def move_pacman(matrix,pacmanPosition, ghostPositions):
                 candy=1
         else:
                 candy=0
-        evals.append(evaluate_move(matrix,move,ghostPositions,candy,0,False))
+        eval=evaluate_move(matrix,move,ghostPositions,alpha,beta,candy,0,False)
+        evals.append(eval)
     #undo la mutare ( adaugam in matrice daca era bomboana sau nu)
-        undo_move(old_ch)
+        undo_move(old_ch,move,matrix)
+        maxEval=max(maxEval,eval)
+        alpha=max(alpha,eval)
+        if(beta <= alpha):
+            break
+    #random.shuffle(moves)
+
+    print(str(pacman_pos)+' -> '+ str(evals)+' // ' +str(stateSteps))
     best_move=moves[np.argmax(evals)]
+    while isInList(best_move) and len(moves)>1:
+        o=np.argmax(evals)
+        only_pos = [num for num in evals if num >= 1]
+        pos_count = len(only_pos)
+        if(pos_count<=1):
+            break
+        del moves[o]
+        del evals[o]
+        print(str(pacman_pos)+' -> '+ str(evals))
+        best_move=moves[np.argmax(evals)]
     do_move(best_move,matrix)
     #calculam cea mai buna valoare dintre valorile de la posibilele mutari
     #facem cea mai buna mutare pe tabla noastra (mancam bomboana si pacmanul)
-    return False
 
-
+    return best_move
+#TODO
+def PointsForPacman(matrix):
+    return 0
 game_over=False
 
 pacman_pos={'x':1,'y':1}
-ghost_pos=[{'x':1,'y':11},{'x':11,'y':1}]
+ghost_pos=[{'x':10,'y':1},{'x':1,'y':10},{'x':10,'y':10}]
 #ghost_pos[1].x
-
-N=10
-ghost_number=2
-matrix[pacman_pos[0]][pacman_pos[1]]=0
-
+N=12
+ghost_number=3
+matrix[pacman_pos['x']][pacman_pos['y']]=0
+TotalStates=[]
+print_Matrix(matrix)
 while not game_over:
     #o sa dam impresia ca pacman si fantoma se misca in acelasi timp pt ca le mutam pe ambele in aceasi iteratie
-    move_ghost(matrix, ghost_pos)
+    ghost_pos=move_ghost(matrix, ghost_pos)
+    
+    game_over, cast=check_win(matrix,ghost_pos,pacman_pos,False)
     #mutam fantoma
-    move_pacman(matrix,pacman_pos,ghost_pos)
-    #mutam pacman
-    #verificam sa nu se fi terminat jocul
-    check_win(matrix,ghost_pos,pacman_pos)
+    if not game_over:
+        pacman_pos=move_pacman(matrix,pacman_pos,ghost_pos,-10000,10000)
+        stateSteps.append(pacman_pos)
+        #mutam pacman
+        #verificam sa nu se fi terminat jocul
+        game_over, cast= check_win(matrix,ghost_pos,pacman_pos,False)
+
     #afisam matricea
     print_Matrix(matrix)
+    if len(stateSteps) >10:
+        stateSteps.pop(0)
+if(cast==3):
+    print("Game Over")
+else: 
+    print("Winner")
+print(PointsForPacman(matrix))

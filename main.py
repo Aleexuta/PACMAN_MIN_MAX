@@ -356,7 +356,12 @@ def move_pacman(matrix,pacmanPosition, ghostPositions,alpha,beta):
     return best_move
 #TODO
 def PointsForPacman(matrix):
-    return 0
+    nr_puncte=0
+    for i in range(N):
+        for j in range(N):
+            if(matrix[i][j]==GOL):
+                nr_puncte+=1
+    return nr_puncte-1
 game_over=False
 
 pacman_pos={'x':1,'y':1}

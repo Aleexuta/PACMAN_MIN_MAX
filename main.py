@@ -70,14 +70,19 @@ def undo_move(CH,move,matrix): #dam undo la mutare. punem pe move CH( bomboana s
 titleSize=48
 tile_dict = {0: pygame.image.load(full_path+"\gray.png"),    1: pygame.image.load(full_path+"\\brick.png"), 
     2: pygame.image.load(full_path+"\\bomboana.png"), 3: pygame.image.load(full_path+"\\fantoma.png"),
-    4: pygame.image.load(full_path+"\pacman.png")}
+    4: pygame.image.load(full_path+"\pacman.png"), 5:pygame.image.load(full_path+"\winner.jpg"),
+    6:pygame.image.load(full_path+"\gameover.jpg")}
 for x in range(5):
     tile_dict[x]=pygame.transform.scale(tile_dict[x],(titleSize,titleSize))
+screen_size=len(matrix[0])*titleSize
+tile_dict[5]=pygame.transform.scale(tile_dict[5],(screen_size,screen_size))
+tile_dict[6]=pygame.transform.scale(tile_dict[6],(screen_size,screen_size))
+
 def printGraphic(matrix):
     tileX = 0
     tileY = 0
    
-    screen = pygame.display.set_mode((600,600))
+    screen = pygame.display.set_mode((screen_size,screen_size))
     for x in matrix:
         tileX = 0
         for x in x:
@@ -207,6 +212,7 @@ def possible_moves(CH,matrix,ghost_pos,pacman_pos): # ia toate posibilele mutari
             moves.append({'x':x,'y':y-1})
         if matrix[x][y+1]!=PERETE :                      #dreapta
             moves.append({'x':x,'y':y+1})
+        random.shuffle(moves)
         return moves
     if CH==FANTOMA :
         combinations=all_ghost_moves()
@@ -240,7 +246,7 @@ def possible_moves(CH,matrix,ghost_pos,pacman_pos): # ia toate posibilele mutari
         return all_moves
 
 #este recursiva, face overthinking
-def evaluate_move(matrix, pacmacPosition, ghostPositions, alpha, beta,candyConsumed=0,depth=0,isMaximizingPlayer=True): #calculeaza costul mutarii ( arborele) si returneaza cea mai buna alegere 
+def evaluate_move(matrix, pacmacPosition, ghostPositions, alpha, beta,candyConsumed,depth=0,isMaximizingPlayer=True): #calculeaza costul mutarii ( arborele) si returneaza cea mai buna alegere 
     #functia de min/max
     #verificam sa nu fie la final ( game over /castig )
     final,player=check_win(matrix,ghostPositions=ghostPositions,pacmanPosition=pacmacPosition)
@@ -248,16 +254,16 @@ def evaluate_move(matrix, pacmacPosition, ghostPositions, alpha, beta,candyConsu
         if player==FANTOMA:
             return -100+depth
         elif player==PACMAN:
-            return -depth+100+2*candyConsumed
+            return -depth+100+candyConsumed
         else:
-            return -depth+2*candyConsumed
+            return 100-depth+candyConsumed
     if depth >8:
-        return depth+2*candyConsumed
+        return 50-depth+candyConsumed
     #aici, la frunze e cel mai ciudatel
         # -1000 + depth pierde pacman
         # 1000 - depth + candyConsumed pana aici
 
-    evals=[]
+    candy=0
     #if daca e isMax=True   ->pacman
     if isMaximizingPlayer==True:
         maxEval=-10000
@@ -272,10 +278,10 @@ def evaluate_move(matrix, pacmacPosition, ghostPositions, alpha, beta,candyConsu
             do_move(move,matrix)
         #evaluam noua posibila mutare, adaugam +1 la candyConsumed daca pe viitoarea este bomboana
             if(old_ch==BOMBOANA):
-                 candy=candyConsumed+1
+                 candy=1
             else:
-                 candy=candyConsumed
-            eval=evaluate_move(matrix,move,ghostPositions,alpha,beta,candy,depth+1,False)
+                 candy=0
+            eval=evaluate_move(matrix,move,ghostPositions,alpha,beta,candyConsumed+candy,depth+1,False)
         #undo la mutare ( adaugam in matrice daca era bomboana sau nu)
             undo_move(old_ch,move,matrix)
             maxEval=max(maxEval,eval)
@@ -321,12 +327,13 @@ def move_pacman(matrix,pacmanPosition, ghostPositions,alpha,beta):
     #salvam ce se afla pe viitoarea pozitie
         old_ch=matrix[move['x']][move['y']]
     #facem mutare, punem pe noua pozitia a pacmanului, ca e GOL
-        do_move(move,matrix)
+        
     #evaluam noua posibila mutare, adaugam +1 la candyConsumed daca pe viitoarea este bomboana
         if(old_ch==BOMBOANA):
                 candy=1
         else:
                 candy=0
+        do_move(move,matrix)
         eval=evaluate_move(matrix,move,ghostPositions,alpha,beta,candy,0,False)
         evals.append(eval)
     #undo la mutare ( adaugam in matrice daca era bomboana sau nu)
@@ -349,6 +356,7 @@ def move_pacman(matrix,pacmanPosition, ghostPositions,alpha,beta):
         del evals[o]
         print(str(pacman_pos)+' -> '+ str(evals))
         best_move=moves[np.argmax(evals)]
+    print(evals[np.argmax(evals)])
     do_move(best_move,matrix)
     #calculam cea mai buna valoare dintre valorile de la posibilele mutari
     #facem cea mai buna mutare pe tabla noastra (mancam bomboana si pacmanul)
@@ -357,11 +365,14 @@ def move_pacman(matrix,pacmanPosition, ghostPositions,alpha,beta):
 #TODO
 def PointsForPacman(matrix):
     nr_puncte=0
+    total=0
     for i in range(N):
         for j in range(N):
             if(matrix[i][j]==GOL):
                 nr_puncte+=1
-    return nr_puncte-1
+            if(matrix[i][j]==GOL or matrix[i][j]==BOMBOANA):
+                total+=1
+    return str(nr_puncte-1)+'/'+str(total-1)
 game_over=False
 
 pacman_pos={'x':1,'y':1}
@@ -372,6 +383,7 @@ ghost_number=2
 matrix[pacman_pos['x']][pacman_pos['y']]=0
 TotalStates=[]
 print_Matrix(matrix)
+
 while not game_over:
     
     pygame.display.flip()
@@ -391,8 +403,24 @@ while not game_over:
     print_Matrix(matrix)
     if len(stateSteps) >10:
         stateSteps.pop(0)
+screen = pygame.display.set_mode((600,600))
 if(cast==3):
     print("Game Over")
+    screen.blit(tile_dict[6],(0,0))
+    pygame.font.init()
+    my_font = pygame.font.SysFont('Comic Sans MS', 30)
+    text_surface = my_font.render(PointsForPacman(matrix), False,(255, 255, 255))
+    screen.blit(text_surface, (screen_size/2-30,screen_size-50))
+    pygame.display.flip()
+    pygame.time.wait(5000)
 else: 
     print("Winner")
-print(PointsForPacman(matrix))
+    screen.blit(tile_dict[5],(0,0))
+    pygame.font.init()
+    my_font = pygame.font.SysFont('Comic Sans MS', 30)
+    text_surface = my_font.render(PointsForPacman(matrix), False,(255, 255, 255))
+    screen.blit(text_surface, (screen_size/2-30,screen_size-50))
+    pygame.display.flip()
+    pygame.time.wait(5000)
+print()
+

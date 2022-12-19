@@ -1,9 +1,18 @@
+from turtle import Screen
+from pylab import *
 from enum import Enum#test
 import random
 import numpy as np
 from itertools import combinations_with_replacement
 import sys
 import copy
+import pygame
+from pygame.locals import *
+import os
+
+absolute_path = os.path.dirname(__file__)
+relative_path = "images"
+full_path = os.path.join(absolute_path, relative_path)
 sys.setrecursionlimit(10000) 
 #0-gol
 #1-perete
@@ -35,7 +44,7 @@ matrix=[[1,1,1,1,1,1,1,1,1,1,1,1],
         [1,2,1,2,2,1,2,2,1,2,2,1],
         [1,2,1,1,2,1,2,1,1,1,2,1],
         [1,2,2,2,2,2,2,2,1,2,2,1],
-        [1,2,1,1,1,1,2,1,1,2,1,1],
+        [1,2,2,1,1,1,2,2,1,2,1,1],
         [1,2,2,2,2,2,2,2,2,2,2,1],
         [1,1,1,1,1,1,1,1,1,1,1,1]]
 minMatrix=[[1,1,1,1,1],
@@ -58,10 +67,43 @@ def undo_move(CH,move,matrix): #dam undo la mutare. punem pe move CH( bomboana s
  
     matrix[move['x']][move['y']] = CH
     return True
-#TODO
+titleSize=48
+tile_dict = {0: pygame.image.load(full_path+"\gray.png"),    1: pygame.image.load(full_path+"\\brick.png"), 
+    2: pygame.image.load(full_path+"\\bomboana.png"), 3: pygame.image.load(full_path+"\\fantoma.png"),
+    4: pygame.image.load(full_path+"\pacman.png")}
+for x in range(5):
+    tile_dict[x]=pygame.transform.scale(tile_dict[x],(titleSize,titleSize))
 def printGraphic(matrix):
-    return True
+    tileX = 0
+    tileY = 0
+   
+    screen = pygame.display.set_mode((600,600))
+    for x in matrix:
+        tileX = 0
+        for x in x:
+            if x == 0:
+                screen.blit(tile_dict[0], (tileX, tileY))
+                tileX = tileX+titleSize
+            if x == 1:
+                screen.blit(tile_dict[1], (tileX, tileY))
+                tileX = tileX+titleSize
+            if x== 2:
+                screen.blit(tile_dict[0], (tileX, tileY))
+                screen.blit(tile_dict[2], (tileX, tileY))
+                tileX = tileX+titleSize
+            if x==3:
+                screen.blit(tile_dict[0], (tileX, tileY))
+                screen.blit(tile_dict[3], (tileX, tileY))
+                tileX = tileX+titleSize
+            if x==4:
+                screen.blit(tile_dict[0], (tileX, tileY))
+                screen.blit(tile_dict[4], (tileX, tileY))
+                tileX = tileX+titleSize
+            
+        tileY += titleSize
+    pygame.time.wait(100)
 def print_Matrix(matrix): #afisam matricea in interfata sau normal
+
     newMatrix=copy.deepcopy(matrix)
     newMatrix[pacman_pos['x']][pacman_pos['y']]=PACMAN
     for i in range(ghost_number):
@@ -70,6 +112,7 @@ def print_Matrix(matrix): #afisam matricea in interfata sau normal
         print(newMatrix[i])
     print(pacman_pos)
     print(ghost_pos)
+    printGraphic(newMatrix)
     print("\n\n")
 def is_ghost_move_valid(ghostPosition,actualGhost,newMove):
     for i in range(ghost_number):
@@ -85,7 +128,8 @@ def move_ghost(matrix,ghostPositions): #mutam random fantomele
         j=ghostPositions[nr_gh]['y']
         invalid_pos=0
         while not moved:
-            pozitie_random = random.randint(0, 3)
+            pozitie_random = random.randint(0, 100)
+            pozitie_random=pozitie_random%4
             if pozitie_random == 0:
                 if (i-1)>=0 and matrix[i-1][j] != PERETE:
                     if(is_ghost_move_valid(ghostPositions,nr_gh,{'x':i-1,'y':j})):
@@ -98,13 +142,13 @@ def move_ghost(matrix,ghostPositions): #mutam random fantomele
                         ghostPositions[nr_gh]={'x':i,'y':j+1}
                         moved = True
                     else: invalid_pos+=1
-            if pozitie_random == 0:
+            if pozitie_random == 2:
                 if (i+1)<=N and matrix[i+1][j] != PERETE:
                     if(is_ghost_move_valid(ghostPositions,nr_gh,{'x':i+1,'y':j})):
                         ghostPositions[nr_gh]={'x':i+1,'y':j}
                         moved=True
                     else: invalid_pos+=1
-            if pozitie_random == 0:
+            if pozitie_random == 3:
                 if (j-1)>=0 and matrix[i][j-1] != PERETE:
                     if(is_ghost_move_valid(ghostPositions,nr_gh,{'x':i,'y':j-1})):
                         ghostPositions[nr_gh]={'x':i,'y':j-1}
@@ -207,7 +251,7 @@ def evaluate_move(matrix, pacmacPosition, ghostPositions, alpha, beta,candyConsu
             return -depth+100+2*candyConsumed
         else:
             return -depth+2*candyConsumed
-    if depth >10:
+    if depth >8:
         return depth+2*candyConsumed
     #aici, la frunze e cel mai ciudatel
         # -1000 + depth pierde pacman
@@ -316,14 +360,16 @@ def PointsForPacman(matrix):
 game_over=False
 
 pacman_pos={'x':1,'y':1}
-ghost_pos=[{'x':10,'y':1},{'x':1,'y':10},{'x':10,'y':10}]
+ghost_pos=[{'x':10,'y':1},{'x':10,'y':3},{'x':5,'y':5}]
 #ghost_pos[1].x
 N=12
-ghost_number=3
+ghost_number=2
 matrix[pacman_pos['x']][pacman_pos['y']]=0
 TotalStates=[]
 print_Matrix(matrix)
 while not game_over:
+    
+    pygame.display.flip()
     #o sa dam impresia ca pacman si fantoma se misca in acelasi timp pt ca le mutam pe ambele in aceasi iteratie
     ghost_pos=move_ghost(matrix, ghost_pos)
     
